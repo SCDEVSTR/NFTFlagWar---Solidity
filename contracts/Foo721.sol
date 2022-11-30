@@ -64,8 +64,7 @@ contract Foo721 is ERC721, ERC721Enumerable, Ownable {
     }
 
     function freeMint(address to) external {
-        if (_tokenIdCounter.current() >= FREE_MINT_COUNT)
-            revert FreeMintExceeded();
+        if (_tokenIdCounter.current() >= FREE_MINT_COUNT) revert FreeMintExceeded();
         if (freeMinted[to]) revert AlreadyFreeMinted();
 
         freeMinted[to] = true;
@@ -78,9 +77,7 @@ contract Foo721 is ERC721, ERC721Enumerable, Ownable {
 
     function withdraw() external onlyOwner {
         // solhint-disable-next-line avoid-low-level-calls
-        (bool isSuccess, ) = payable(msg.sender).call{
-            value: address(this).balance
-        }("");
+        (bool isSuccess, ) = payable(msg.sender).call{ value: address(this).balance }("");
 
         if (!isSuccess) revert TransferTxError();
     }
@@ -94,12 +91,7 @@ contract Foo721 is ERC721, ERC721Enumerable, Ownable {
         ERC721Enumerable._beforeTokenTransfer(from, to, tokenId);
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC721, ERC721Enumerable)
-        returns (bool)
-    {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721Enumerable) returns (bool) {
         return ERC721Enumerable.supportsInterface(interfaceId);
     }
 }

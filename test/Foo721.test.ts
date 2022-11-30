@@ -47,16 +47,16 @@ describe(name, () => {
       contract.mint(addresses[7].address, 1, {
         value: String(MINT_PRICE.mul(1)),
       })
-    ).to.be.revertedWith('MaxSupplyExceeded');
+    ).to.be.revertedWithCustomError(contract, 'MaxSupplyExceeded');
     await ethers.provider.send('evm_increaseTime', [-1000]);
   });
 
   it('should not MINT if InsufficientFunds', async () => {
     await ethers.provider.send('evm_increaseTime', [1000]);
 
-    await expect(contract.mint(addresses[0].address, 1)).to.be.revertedWith(
-      'InsufficientFunds'
-    );
+    await expect(
+      contract.mint(addresses[0].address, 1)
+    ).to.be.revertedWithCustomError(contract, 'InsufficientFunds');
 
     await ethers.provider.send('evm_increaseTime', [-1000]);
   });
@@ -76,9 +76,9 @@ describe(name, () => {
 
     await contract.freeMint(addresses[0].address);
 
-    await expect(contract.freeMint(addresses[0].address)).to.be.revertedWith(
-      'AlreadyFreeMinted'
-    );
+    await expect(
+      contract.freeMint(addresses[0].address)
+    ).to.be.revertedWithCustomError(contract, 'AlreadyFreeMinted');
 
     await ethers.provider.send('evm_increaseTime', [-1000]);
   });
@@ -90,9 +90,9 @@ describe(name, () => {
       await contract.freeMint(addresses[index].address);
     }
 
-    await expect(contract.freeMint(addresses[6].address)).to.be.revertedWith(
-      'FreeMintExceeded'
-    );
+    await expect(
+      contract.freeMint(addresses[6].address)
+    ).to.be.revertedWithCustomError(contract, 'FreeMintExceeded');
 
     await ethers.provider.send('evm_increaseTime', [-1000]);
   });
@@ -116,7 +116,7 @@ describe(name, () => {
     const fee = receipt.effectiveGasPrice * receipt.gasUsed;
 
     assert.equal(
-      (await beforeBalance).add(MINT_PRICE).sub(fee).toString(),
+      beforeBalance.add(MINT_PRICE).sub(fee).toString(),
       afterBalance.toString()
     );
     await ethers.provider.send('evm_increaseTime', [-1000]);
