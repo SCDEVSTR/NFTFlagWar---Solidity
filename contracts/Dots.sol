@@ -1,109 +1,80 @@
 // SPDX-License-Identifier: MIT
-// solhint-disable
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "./IDots.sol";
 
-contract Dots is Ownable, ReentrancyGuard {
-    enum Types {
-        Nulland,
-        Argentina,
-        Australia,
-        Brazil,
-        Canada,
-        China,
-        France,
-        Germany,
-        India,
-        Indonesia,
-        Italy,
-        Japan,
-        Korea,
-        Mexico,
-        Russia,
-        SaudiArabia,
-        SouthAfrica,
-        Turkey,
-        Ukraine,
-        UnitedKingdom,
-        UnitedStates
-    }
-
-    enum State {
-        Available,
-        Paused,
-        Completed
-    }
-
-    uint256 public constant x_width = 50;
-    uint256 public constant y_width = 50;
+contract Dots is IDots, Ownable {
+    uint256 public constant X_WIDTH = 50;
+    uint256 public constant Y_WIDTH = 50;
     uint256 public constant EPSILON = 0.01 ether;
     uint256 public constant CLAIM_BASE_PRICE = 0.1 ether;
 
-    State public state;
+    State public gameState;
 
-    mapping(uint256 => mapping(uint256 => Dot)) public lots;
-    mapping(Types => uint256) public dist;
-    Types[x_width][y_width] public slate;
-    //mapping (address=>uint) public balances;
-    struct Dot {
-        address owner;
-        Types country;
-        uint256 last_price;
-    }
-
-    event Transfer(uint256 indexed x, uint256 indexed y, uint256 indexed price, Types new_country);
+    mapping(uint256 => mapping(uint256 => Dot)) public dots;
+    mapping(Country => uint256) public numberOfDotsOccupiedByCountry;
+    Country[X_WIDTH][Y_WIDTH] public gameBoard;
+    uint256 public protocolFee;
 
     constructor() {
-        state = State.Available;
+        gameState = State.Available;
     }
 
     function claimLocation(
         uint256 x,
         uint256 y,
-        Types country
-    ) public payable nonReentrant {
-        require(msg.sender == tx.origin, "Contracts can't bid");
-        require(state == State.Available, "Game is paused or ended");
-        require(msg.value >= CLAIM_BASE_PRICE, "lower-bound unsatisfied");
-        require(msg.value >= lots[x][y].last_price + EPSILON, "delta_bid must be geq to epsilon");
-        require(x <= x_width && y <= y_width, "undefined coordinates");
-        require(Types.Nulland < country && country <= Types.UnitedStates, "undefined country");
-        //fee %.1 for location transactions
-        (bool success, ) = payable(lots[x][y].owner).call{ value: (msg.value * 999) / 1000 }("");
-        require(success, "fail during payment");
-        if (dist[lots[x][y].country] > 0) {
-            dist[lots[x][y].country] -= 1;
-        }
-        dist[country] += 1;
-        slate[x][y] = country;
+        Country country
+    ) public payable {
+        Dot memory dotMemory = dots[x][y];
 
-        lots[x][y].last_price = msg.value;
-        lots[x][y].owner = msg.sender;
-        lots[x][y].country = country;
+        if (gameState != State.Available) revert GameIsNotActive();
+        if (dotMemory.lastPrice == 0 && msg.value < CLAIM_BASE_PRICE) revert InsufficientBasePrice();
+        if (msg.value < dotMemory.lastPrice + EPSILON) revert InsufficientPrice();
+        if (x > X_WIDTH || y > Y_WIDTH) revert UndefinedCoordinates();
+        if (country == Country.Nulland || country > Country.UnitedStates) revert UndefinedCountry();
+
+        address lastOwner = dotMemory.owner;
+
+        protocolFee += msg.value / 1000;
+
+        if (numberOfDotsOccupiedByCountry[dotMemory.country] > 0) numberOfDotsOccupiedByCountry[dotMemory.country] -= 1;
+
+        numberOfDotsOccupiedByCountry[country] += 1;
+        gameBoard[x][y] = country;
+
+        Dot storage dot = dots[x][y];
+
+        dot.lastPrice = msg.value;
+        dot.owner = msg.sender;
+        dot.country = country;
 
         emit Transfer(x, y, msg.value, country);
+
         //game over if one country claimed every point
-        if (dist[country] == (x_width * y_width)) {
-            state = State.Completed;
+        if (numberOfDotsOccupiedByCountry[country] == (X_WIDTH * Y_WIDTH)) {
+            gameState = State.Completed;
+            emit GameEnded(country);
         }
+
+        //solhint-disable-next-line
+        (bool success, ) = payable(lastOwner).call{ value: (dotMemory.lastPrice * 999) / 1000 }("");
+        if (!success) revert TxError();
     }
 
-    function setState(State new_state) public onlyOwner {
-        state = new_state;
+    function setState(State newState) public onlyOwner {
+        gameState = newState;
     }
 
     function claimOwnerCut() public onlyOwner {
-        /// @TODO: Mechanism design for protocol cuts
-        require(state == State.Completed, "Game is not ended yet.");
-
-        (bool success, ) = payable(owner()).call{ value: (address(this).balance * 15) / 100 }("");
-        require(success, "claim failed");
+        if (gameState != State.Completed) revert GameIsActive();
+        //solhint-disable-next-line
+        (bool success, ) = payable(owner()).call{ value: protocolFee }("");
+        if (!success) revert TxError();
     }
 
-    function returnSlate() public view returns (Types[x_width][y_width] memory arr) {
-        return slate;
+    function returnSlate() public view returns (Country[X_WIDTH][Y_WIDTH] memory) {
+        return gameBoard;
     }
 
     /*

@@ -72,10 +72,7 @@ const config: HardhatUserConfig = {
     runOnCompile: false,
   },
   gasReporter: {
-    enabled:
-      (process.env.REPORT_GAS &&
-        'true' === process.env.REPORT_GAS.toLowerCase()) ||
-      false,
+    enabled: true,
     coinmarketcap: process.env.COINMARKETCAP_API_KEY || '',
     gasPriceApi:
       process.env.GAS_PRICE_API ||
