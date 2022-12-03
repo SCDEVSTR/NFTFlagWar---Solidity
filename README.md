@@ -5,8 +5,9 @@ NFTFlagWar Solidity Projesi Work Page
 Optimized Refactored Dots.sol .<br>
 Change Variable names to better readability. <br>
 Implement protocolFee mechanism. <br>
-Saved 291254 gas on deployment. <br>
-![image](https://user-images.githubusercontent.com/45846424/205387746-95c57f52-3850-436e-894e-ea48ccf51839.png)
+Saved 317013 gas on deployment. <br>
+Saved 10K gas on Function call <br>
+![image](https://user-images.githubusercontent.com/45846424/205435293-80979f64-90a5-4442-b31e-2fe5ff8f9d8a.png)
 
 # Prerequisites
 
