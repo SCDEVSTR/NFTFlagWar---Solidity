@@ -14,7 +14,6 @@ contract Dots is IDots, Ownable {
 
     mapping(uint256 => mapping(uint256 => Dot)) public dots;
     mapping(Country => uint256) public numberOfDotsOccupiedByCountry;
-    Country[X_WIDTH][Y_WIDTH] public gameBoard;
     uint256 public protocolFee;
 
     constructor() {
@@ -41,7 +40,6 @@ contract Dots is IDots, Ownable {
         if (numberOfDotsOccupiedByCountry[dotMemory.country] > 0) numberOfDotsOccupiedByCountry[dotMemory.country] -= 1;
 
         numberOfDotsOccupiedByCountry[country] += 1;
-        gameBoard[x][y] = country;
 
         Dot storage dot = dots[x][y];
 
@@ -73,8 +71,12 @@ contract Dots is IDots, Ownable {
         if (!success) revert TxError();
     }
 
-    function returnSlate() public view returns (Country[X_WIDTH][Y_WIDTH] memory) {
-        return gameBoard;
+    function returnSlate() public view returns (Country[Y_WIDTH][X_WIDTH] memory board) {
+        for (uint256 j = 0; j < X_WIDTH; j++) {
+            for (uint256 i = 0; i < Y_WIDTH; i++) {
+                board[j][i] = dots[j][i].country;
+            }
+        }
     }
 
     /*
