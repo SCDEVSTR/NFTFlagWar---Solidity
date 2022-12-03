@@ -64,26 +64,18 @@ contract Dots is IDots, Ownable {
         gameState = newState;
     }
 
-    function claimOwnerCut() public onlyOwner {
+    function claimProtocolFee() public onlyOwner {
         if (gameState != State.Completed) revert GameIsActive();
         //solhint-disable-next-line
         (bool success, ) = payable(owner()).call{ value: protocolFee }("");
         if (!success) revert TxError();
     }
 
-    function returnSlate() public view returns (Country[Y_WIDTH][X_WIDTH] memory board) {
+    function getGameBoard() public view returns (Country[Y_WIDTH][X_WIDTH] memory board) {
         for (uint256 j = 0; j < X_WIDTH; j++) {
             for (uint256 i = 0; i < Y_WIDTH; i++) {
                 board[j][i] = dots[j][i].country;
             }
         }
     }
-
-    /*
-	function recoverBalance() public {
-		require(balances[msg.sender] > 0, "You have no balance to recover");
-		(bool success, ) = payable(msg.sender).call{value:balances[msg.sender]}("");
-		require(success,"Payment failed");
-	}
-*/
 }
