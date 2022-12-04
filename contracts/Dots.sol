@@ -14,7 +14,7 @@ contract Dots is IDots, Ownable {
 
     mapping(uint256 => mapping(uint256 => Dot)) public dots;
     mapping(Country => uint256) public numberOfDotsOccupiedByCountry;
-    uint256 public protocolFee;
+    uint256 public treasury;
 
     constructor() {
         gameState = State.Available;
@@ -35,8 +35,6 @@ contract Dots is IDots, Ownable {
 
         address lastOwner = dotMemory.owner;
 
-        protocolFee += msg.value / 1000;
-
         if (numberOfDotsOccupiedByCountry[dotMemory.country] > 0) numberOfDotsOccupiedByCountry[dotMemory.country] -= 1;
 
         numberOfDotsOccupiedByCountry[country] += 1;
@@ -47,6 +45,7 @@ contract Dots is IDots, Ownable {
         dot.owner = msg.sender;
         dot.country = country;
 
+        //TODO: old country, new_owner,old_owner
         emit Transfer(x, y, msg.value, country);
 
         //game over if one country claimed every point
@@ -55,6 +54,8 @@ contract Dots is IDots, Ownable {
             emit GameEnded(country);
         }
 
+        treasury += dotMemory.lastPrice / 1000;
+
         //solhint-disable-next-line
         (bool success, ) = payable(lastOwner).call{ value: (dotMemory.lastPrice * 999) / 1000 }("");
         if (!success) revert TxError();
@@ -62,14 +63,21 @@ contract Dots is IDots, Ownable {
 
     function setState(State newState) public onlyOwner {
         gameState = newState;
+        emit StateChanged(newState);
     }
 
     function claimProtocolFee() public onlyOwner {
+        uint256 lastTreasury = treasury;
+        treasury = 0;
+
+        //TODO: REMOVAL
         if (gameState != State.Completed) revert GameIsActive();
         //solhint-disable-next-line
-        (bool success, ) = payable(owner()).call{ value: protocolFee }("");
+        (bool success, ) = payable(owner()).call{ value: lastTreasury }("");
         if (!success) revert TxError();
     }
+
+    //TODO: ADD OTHER DOTS FIELDS
 
     function getGameBoard() public view returns (Country[Y_WIDTH][X_WIDTH] memory board) {
         for (uint256 j = 0; j < X_WIDTH; j++) {

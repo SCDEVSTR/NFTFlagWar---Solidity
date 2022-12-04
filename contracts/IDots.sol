@@ -2,6 +2,7 @@
 pragma solidity ^0.8.7;
 
 interface IDots {
+    //TODO: CONVERT TO UINT8 ARRAY
     enum Country {
         Nulland,
         Argentina,
@@ -40,6 +41,7 @@ interface IDots {
 
     event Transfer(uint256 indexed x, uint256 indexed y, uint256 indexed price, Country newCountry);
     event GameEnded(Country winnerCountry);
+    event StateChanged(State indexed newState);
 
     error GameIsNotActive();
     error GameIsActive();
