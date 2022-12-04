@@ -3,8 +3,9 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IDots.sol";
+import "./VestingContract.sol";
 
-contract Dots is IDots, Ownable {
+contract Dots is IDots, VestingContract, Ownable {
     uint256 public constant X_WIDTH = 50;
     uint256 public constant Y_WIDTH = 50;
     uint256 public constant EPSILON = 0.01 ether;
