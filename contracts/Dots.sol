@@ -45,8 +45,7 @@ contract Dots is IDots, Ownable {
         dot.owner = msg.sender;
         dot.country = country;
 
-        //TODO: old country, new_owner,old_owner
-        emit Transfer(x, y, msg.value, country);
+        emit Transfer(x, y, msg.value, dotMemory.lastPrice, country, dotMemory.country);
 
         //game over if one country claimed every point
         if (numberOfDotsOccupiedByCountry[country] == (X_WIDTH * Y_WIDTH)) {
@@ -70,19 +69,23 @@ contract Dots is IDots, Ownable {
         uint256 lastTreasury = treasury;
         treasury = 0;
 
-        //TODO: REMOVAL
-        if (gameState != State.Completed) revert GameIsActive();
         //solhint-disable-next-line
         (bool success, ) = payable(owner()).call{ value: lastTreasury }("");
         if (!success) revert TxError();
     }
 
-    //TODO: ADD OTHER DOTS FIELDS
-
-    function getGameBoard() public view returns (Country[Y_WIDTH][X_WIDTH] memory board) {
+    function getGameBoardCountries() public view returns (Country[Y_WIDTH][X_WIDTH] memory board) {
         for (uint256 j = 0; j < X_WIDTH; j++) {
             for (uint256 i = 0; i < Y_WIDTH; i++) {
                 board[j][i] = dots[j][i].country;
+            }
+        }
+    }
+
+    function getGameBoard() public view returns (Dot[Y_WIDTH][X_WIDTH] memory board) {
+        for (uint256 j = 0; j < X_WIDTH; j++) {
+            for (uint256 i = 0; i < Y_WIDTH; i++) {
+                board[j][i] = dots[j][i];
             }
         }
     }

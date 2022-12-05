@@ -39,7 +39,15 @@ interface IDots {
         uint256 lastPrice;
     }
 
-    event Transfer(uint256 indexed x, uint256 indexed y, uint256 indexed price, Country newCountry);
+    event Transfer(
+        uint256 indexed x,
+        uint256 indexed y,
+        uint256 indexed price,
+        uint256 oldPrice,
+        Country newCountry,
+        Country oldCountry
+    );
+
     event GameEnded(Country winnerCountry);
     event StateChanged(State indexed newState);
 
