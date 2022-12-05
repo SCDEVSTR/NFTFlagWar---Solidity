@@ -35,7 +35,7 @@ describe(name, () => {
       })
     )
       .to.emit(contract, 'Transfer')
-      .withArgs(0, 0, price, 2);
+      .withArgs(0, 0, price, BASE_PRICE, 2, 1);
   });
 
   it('should RE-claim successfully', async () => {
@@ -49,7 +49,7 @@ describe(name, () => {
       })
     )
       .to.emit(contract, 'Transfer')
-      .withArgs(0, 0, price, 2);
+      .withArgs(0, 0, price, BASE_PRICE, 2, 1);
   });
 
   it('should revert with InsufficientBasePrice', async () => {
