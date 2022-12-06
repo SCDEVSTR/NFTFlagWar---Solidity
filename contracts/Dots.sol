@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IDots.sol";
 
 contract Dots is IDots, Ownable {
+    //TODO: Reusability
     uint256 public constant X_WIDTH = 50;
     uint256 public constant Y_WIDTH = 50;
     uint256 public constant EPSILON = 0.01 ether;
@@ -28,14 +29,16 @@ contract Dots is IDots, Ownable {
         Dot memory dotMemory = dots[x][y];
 
         if (gameState != State.Available) revert GameIsNotActive();
-        if (dotMemory.lastPrice == 0 && msg.value < CLAIM_BASE_PRICE) revert InsufficientBasePrice();
+        if (msg.value < CLAIM_BASE_PRICE) revert InsufficientBasePrice();
         if (msg.value < dotMemory.lastPrice + EPSILON) revert InsufficientPrice();
-        if (x > X_WIDTH || y > Y_WIDTH) revert UndefinedCoordinates();
+        if (x > X_WIDTH - 1 || y > Y_WIDTH - 1) revert UndefinedCoordinates();
         if (country == Country.Nulland || country > Country.UnitedStates) revert UndefinedCountry();
 
         address lastOwner = dotMemory.owner;
 
-        if (numberOfDotsOccupiedByCountry[dotMemory.country] > 0) numberOfDotsOccupiedByCountry[dotMemory.country] -= 1;
+        if (numberOfDotsOccupiedByCountry[dotMemory.country] > 0) {
+            numberOfDotsOccupiedByCountry[dotMemory.country] -= 1;
+        }
 
         numberOfDotsOccupiedByCountry[country] += 1;
 
@@ -55,9 +58,12 @@ contract Dots is IDots, Ownable {
 
         treasury += dotMemory.lastPrice / 1000;
 
-        //solhint-disable-next-line
-        (bool success, ) = payable(lastOwner).call{ value: (dotMemory.lastPrice * 999) / 1000 }("");
-        if (!success) revert TxError();
+        // if it is first claim then there is no returning money
+        if (lastOwner != address(0)) {
+            //solhint-disable-next-line
+            (bool success, ) = payable(lastOwner).call{ value: (dotMemory.lastPrice * 999) / 1000 }("");
+            if (!success) revert TxError();
+        }
     }
 
     function setState(State newState) public onlyOwner {
@@ -65,21 +71,13 @@ contract Dots is IDots, Ownable {
         emit StateChanged(newState);
     }
 
-    function claimProtocolFee() public onlyOwner {
+    function claimTreasury() public onlyOwner {
         uint256 lastTreasury = treasury;
         treasury = 0;
 
         //solhint-disable-next-line
         (bool success, ) = payable(owner()).call{ value: lastTreasury }("");
         if (!success) revert TxError();
-    }
-
-    function getGameBoardCountries() public view returns (Country[Y_WIDTH][X_WIDTH] memory board) {
-        for (uint256 j = 0; j < X_WIDTH; j++) {
-            for (uint256 i = 0; i < Y_WIDTH; i++) {
-                board[j][i] = dots[j][i].country;
-            }
-        }
     }
 
     function getGameBoard() public view returns (Dot[Y_WIDTH][X_WIDTH] memory board) {
