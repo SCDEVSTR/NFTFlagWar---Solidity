@@ -4,6 +4,7 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IDots.sol";
 
+//TODO: FinishGame
 contract Dots is IDots, Ownable {
     //TODO: Reusability
     uint256 public constant X_WIDTH = 50;
