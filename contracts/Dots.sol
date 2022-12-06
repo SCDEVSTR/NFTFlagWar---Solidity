@@ -53,6 +53,7 @@ contract Dots is IDots, Ownable {
 
         //game over if one country claimed every point
         if (numberOfDotsOccupiedByCountry[country] == (X_WIDTH * Y_WIDTH)) {
+            //TODO: finish game
             gameState = State.Completed;
             emit GameEnded(country);
         }
