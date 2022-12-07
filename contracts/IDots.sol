@@ -2,31 +2,7 @@
 pragma solidity ^0.8.7;
 
 interface IDots {
-    //TODO: CONVERT TO UINT8 ARRAY
-    enum Country {
-        Nulland,
-        Argentina,
-        Australia,
-        Brazil,
-        Canada,
-        China,
-        France,
-        Germany,
-        India,
-        Indonesia,
-        Italy,
-        Japan,
-        Korea,
-        Mexico,
-        Russia,
-        SaudiArabia,
-        SouthAfrica,
-        Turkey,
-        Ukraine,
-        UnitedKingdom,
-        UnitedStates
-    }
-
+    //TODO: add cancelled state ?
     enum State {
         Available,
         Paused,
@@ -35,7 +11,7 @@ interface IDots {
 
     struct Dot {
         address owner;
-        Country country;
+        uint256 country;
         uint256 lastPrice;
     }
 
@@ -44,11 +20,11 @@ interface IDots {
         uint256 indexed y,
         uint256 indexed price,
         uint256 oldPrice,
-        Country newCountry,
-        Country oldCountry
+        uint256 newCountry,
+        uint256 oldCountry
     );
 
-    event GameEnded(Country winnerCountry);
+    event GameEnded(uint256 winnerCountry);
     event StateChanged(State indexed newState);
 
     error GameIsNotActive();

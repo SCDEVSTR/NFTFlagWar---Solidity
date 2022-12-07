@@ -4,19 +4,20 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IDots.sol";
 
-//TODO: FinishGame
 contract Dots is IDots, Ownable {
-    //TODO: Reusability
-    uint256 public constant X_WIDTH = 50;
-    uint256 public constant Y_WIDTH = 50;
-    uint256 public constant EPSILON = 0.01 ether;
-    uint256 public constant CLAIM_BASE_PRICE = 0.1 ether;
+    uint256 public xWidth = 50;
+    uint256 public yWidth = 50;
+    uint256 public epsilon = 0.01 ether;
+    uint256 public claimBasePrice = 0.1 ether;
 
     State public gameState;
 
     mapping(uint256 => mapping(uint256 => Dot)) public dots;
-    mapping(Country => uint256) public numberOfDotsOccupiedByCountry;
+    mapping(uint256 => uint256) public numberOfDotsOccupiedByCountry;
+
     uint256 public treasury;
+    // we can add mapping integer to string(country name) to put countries in the blockchain
+    uint256 public numberOfCountries = 20;
 
     constructor() {
         gameState = State.Available;
@@ -25,15 +26,15 @@ contract Dots is IDots, Ownable {
     function claimLocation(
         uint256 x,
         uint256 y,
-        Country country
+        uint256 country
     ) public payable {
         Dot memory dotMemory = dots[x][y];
 
         if (gameState != State.Available) revert GameIsNotActive();
-        if (msg.value < CLAIM_BASE_PRICE) revert InsufficientBasePrice();
-        if (msg.value < dotMemory.lastPrice + EPSILON) revert InsufficientPrice();
-        if (x > X_WIDTH - 1 || y > Y_WIDTH - 1) revert UndefinedCoordinates();
-        if (country == Country.Nulland || country > Country.UnitedStates) revert UndefinedCountry();
+        if (msg.value < claimBasePrice) revert InsufficientBasePrice();
+        if (msg.value < dotMemory.lastPrice + epsilon) revert InsufficientPrice();
+        if (x > xWidth - 1 || y > yWidth - 1) revert UndefinedCoordinates();
+        if (country == 0 || country > numberOfCountries) revert UndefinedCountry();
 
         address lastOwner = dotMemory.owner;
 
@@ -52,8 +53,9 @@ contract Dots is IDots, Ownable {
         emit Transfer(x, y, msg.value, dotMemory.lastPrice, country, dotMemory.country);
 
         //game over if one country claimed every point
-        if (numberOfDotsOccupiedByCountry[country] == (X_WIDTH * Y_WIDTH)) {
-            //TODO: finish game
+        if (numberOfDotsOccupiedByCountry[country] == (xWidth * yWidth)) {
+            clearBoard();
+            clearNumberOfDotsOccupiedByCountry();
             gameState = State.Completed;
             emit GameEnded(country);
         }
@@ -82,11 +84,50 @@ contract Dots is IDots, Ownable {
         if (!success) revert TxError();
     }
 
-    function getGameBoard() public view returns (Dot[Y_WIDTH][X_WIDTH] memory board) {
-        for (uint256 j = 0; j < X_WIDTH; j++) {
-            for (uint256 i = 0; i < Y_WIDTH; i++) {
-                board[j][i] = dots[j][i];
+    function getGameBoard() public view returns (Dot[] memory) {
+        Dot[] memory board = new Dot[](xWidth * yWidth);
+        uint256 k = 0;
+
+        for (uint256 j = 0; j < yWidth; j++) {
+            for (uint256 i = 0; i < xWidth; i++) {
+                board[k++] = dots[i][j];
             }
         }
+        return board;
+    }
+
+    function clearBoard() private {
+        for (uint256 j = 0; j < xWidth; j++) {
+            for (uint256 i = 0; i < yWidth; i++) {
+                delete dots[j][i];
+            }
+        }
+    }
+
+    function clearNumberOfDotsOccupiedByCountry() private {
+        uint256 len = numberOfCountries;
+        for (uint256 i = 0; i < len; i++) {
+            numberOfDotsOccupiedByCountry[i] = 0;
+        }
+    }
+
+    function setNumberOfCountries(uint256 _numberOfCountries) external onlyOwner {
+        numberOfCountries = _numberOfCountries;
+    }
+
+    function setXWidth(uint256 _xWidth) external onlyOwner {
+        xWidth = _xWidth;
+    }
+
+    function setYWidth(uint256 _yWidth) external onlyOwner {
+        yWidth = _yWidth;
+    }
+
+    function setEpsilon(uint256 _epsilon) external onlyOwner {
+        epsilon = _epsilon;
+    }
+
+    function setBasePrice(uint256 _claimBasePrice) external onlyOwner {
+        claimBasePrice = _claimBasePrice;
     }
 }
