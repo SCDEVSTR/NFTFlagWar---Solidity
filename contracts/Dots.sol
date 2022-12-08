@@ -12,8 +12,10 @@ contract Dots is IDots, Ownable {
 
     State public gameState;
 
-    mapping(uint256 => mapping(uint256 => Dot)) public dots;
-    mapping(uint256 => uint256) public numberOfDotsOccupiedByCountry;
+    // gameID => Y index => X index => Dot
+    mapping(uint256 => mapping(uint256 => mapping(uint256 => Dot))) public dots;
+    // gameID => country => numberOfDotsOccupiedByCountry
+    mapping(uint256 => mapping(uint256 => uint256)) public numberOfDotsOccupiedByCountry;
 
     uint256 public treasury;
     // we can add mapping integer to string(country name) to put countries in the blockchain
@@ -24,11 +26,12 @@ contract Dots is IDots, Ownable {
     }
 
     function claimLocation(
-        uint256 x,
+        uint256 gameIndex,
         uint256 y,
+        uint256 x,
         uint256 country
     ) public payable {
-        Dot memory dotMemory = dots[x][y];
+        Dot memory dotMemory = dots[gameIndex][y][x];
 
         if (gameState != State.Available) revert GameIsNotActive();
         if (msg.value < claimBasePrice) revert InsufficientBasePrice();
@@ -38,24 +41,22 @@ contract Dots is IDots, Ownable {
 
         address lastOwner = dotMemory.owner;
 
-        if (numberOfDotsOccupiedByCountry[dotMemory.country] > 0) {
-            numberOfDotsOccupiedByCountry[dotMemory.country] -= 1;
+        if (numberOfDotsOccupiedByCountry[gameIndex][dotMemory.country] > 0) {
+            numberOfDotsOccupiedByCountry[gameIndex][dotMemory.country] -= 1;
         }
 
-        numberOfDotsOccupiedByCountry[country] += 1;
+        numberOfDotsOccupiedByCountry[gameIndex][country] += 1;
 
-        Dot storage dot = dots[x][y];
+        Dot storage dot = dots[gameIndex][y][x];
 
         dot.lastPrice = msg.value;
         dot.owner = msg.sender;
         dot.country = country;
 
-        emit Transfer(x, y, msg.value, dotMemory.lastPrice, country, dotMemory.country);
+        emit Transfer(gameIndex, y, x, msg.value, dotMemory.lastPrice, country, dotMemory.country);
 
         //game over if one country claimed every point
-        if (numberOfDotsOccupiedByCountry[country] == (xWidth * yWidth)) {
-            clearBoard();
-            clearNumberOfDotsOccupiedByCountry();
+        if (numberOfDotsOccupiedByCountry[gameIndex][country] == (xWidth * yWidth)) {
             gameState = State.Completed;
             emit GameEnded(country);
         }
@@ -82,33 +83,6 @@ contract Dots is IDots, Ownable {
         //solhint-disable-next-line
         (bool success, ) = payable(owner()).call{ value: lastTreasury }("");
         if (!success) revert TxError();
-    }
-
-    function getGameBoard() public view returns (Dot[] memory) {
-        Dot[] memory board = new Dot[](xWidth * yWidth);
-        uint256 k = 0;
-
-        for (uint256 j = 0; j < yWidth; j++) {
-            for (uint256 i = 0; i < xWidth; i++) {
-                board[k++] = dots[i][j];
-            }
-        }
-        return board;
-    }
-
-    function clearBoard() private {
-        for (uint256 j = 0; j < xWidth; j++) {
-            for (uint256 i = 0; i < yWidth; i++) {
-                delete dots[j][i];
-            }
-        }
-    }
-
-    function clearNumberOfDotsOccupiedByCountry() private {
-        uint256 len = numberOfCountries;
-        for (uint256 i = 0; i < len; i++) {
-            numberOfDotsOccupiedByCountry[i] = 0;
-        }
     }
 
     function setNumberOfCountries(uint256 _numberOfCountries) external onlyOwner {

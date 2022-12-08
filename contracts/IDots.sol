@@ -16,16 +16,18 @@ interface IDots {
     }
 
     event Transfer(
-        uint256 indexed x,
-        uint256 indexed y,
-        uint256 indexed price,
+        uint256 indexed gameIndex,
+        uint256 y,
+        uint256 x,
+        uint256 price,
         uint256 oldPrice,
-        uint256 newCountry,
+        uint256 indexed newCountry,
         uint256 oldCountry
     );
 
     event GameEnded(uint256 winnerCountry);
     event StateChanged(State indexed newState);
+    event BoardCleared();
 
     error GameIsNotActive();
     error GameIsActive();

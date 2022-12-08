@@ -26,59 +26,58 @@ describe(name, () => {
   // claim tests
   it('should claim successfully', async () => {
     const price = BASE_PRICE.add(EPSILON);
-    await contract.connect(addresses[0]).claimLocation(0, 0, 1, {
+    await contract.connect(addresses[0]).claimLocation(0, 0, 0, 1, {
       value: String(BASE_PRICE),
     });
     await expect(
-      contract.connect(owner).claimLocation(0, 0, 2, {
+      contract.connect(owner).claimLocation(0, 0, 0, 2, {
         value: String(price),
       })
     )
       .to.emit(contract, 'Transfer')
-      .withArgs(0, 0, price, BASE_PRICE, 2, 1);
+      .withArgs(0, 0, 0, price, BASE_PRICE, 2, 1);
   });
 
   it('should RE-claim successfully', async () => {
     const price = BASE_PRICE.add(EPSILON);
-    await contract.connect(addresses[0]).claimLocation(0, 0, 1, {
+    await contract.connect(addresses[0]).claimLocation(0, 0, 0, 1, {
       value: String(BASE_PRICE),
     });
     await expect(
-      contract.claimLocation(0, 0, 2, {
+      contract.claimLocation(0, 0, 0, 2, {
         value: String(price),
       })
     )
       .to.emit(contract, 'Transfer')
-      .withArgs(0, 0, price, BASE_PRICE, 2, 1);
+      .withArgs(0, 0, 0, price, BASE_PRICE, 2, 1);
   });
 
   it('should revert with InsufficientBasePrice', async () => {
-    await expect(contract.claimLocation(0, 0, 1)).to.be.revertedWithCustomError(
-      contract,
-      'InsufficientBasePrice'
-    );
+    await expect(
+      contract.claimLocation(0, 0, 0, 1)
+    ).to.be.revertedWithCustomError(contract, 'InsufficientBasePrice');
   });
 
-  it('should RE-claim successfully', async () => {
-    await contract.connect(addresses[0]).claimLocation(0, 0, 1, {
-      value: String(BASE_PRICE),
-    });
-    await expect(contract.claimLocation(0, 0, 1)).to.be.revertedWithCustomError(
-      contract,
-      'InsufficientPrice'
-    );
-  });
+  // it('should RE-claim successfully', async () => {
+  //   await contract.connect(addresses[0]).claimLocation(0, 0, 1, {
+  //     value: String(BASE_PRICE),
+  //   });
+  //   await expect(contract.claimLocation(0, 0, 1)).to.be.revertedWithCustomError(
+  //     contract,
+  //     'InsufficientPrice'
+  //   );
+  // });
 
   it('should UndefinedCoordinates', async () => {
     await expect(
-      contract.claimLocation(0, 51, 1, {
+      contract.claimLocation(0, 0, 51, 1, {
         value: String(BASE_PRICE),
       })
     ).to.be.revertedWithCustomError(contract, 'UndefinedCoordinates');
   });
   it('should UndefinedCountry', async () => {
     await expect(
-      contract.claimLocation(0, 0, 0, {
+      contract.claimLocation(0, 0, 0, 0, {
         value: String(BASE_PRICE),
       })
     ).to.be.revertedWithCustomError(contract, 'UndefinedCountry');
