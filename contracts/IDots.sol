@@ -46,4 +46,6 @@ interface IDots {
     error UndefinedCoordinates();
     error UndefinedCountry();
     error TxError();
+
+    function xWidth() external view returns (uint256);
 }

@@ -3,10 +3,11 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IDots.sol";
+import "./VestingContract.sol";
 
-contract Dots is IDots, Ownable {
+contract Dots is IDots, Ownable, VestingContract {
     // grid size
-    uint256 public xWidth = 50;
+    uint256 public override xWidth = 50;
     // grid size
     uint256 public yWidth = 50;
     // increase rate
