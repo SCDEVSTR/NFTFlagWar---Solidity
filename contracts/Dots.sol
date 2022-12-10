@@ -5,25 +5,26 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IDots.sol";
 
 contract Dots is IDots, Ownable {
+    // grid size
     uint256 public xWidth = 50;
+    // grid size
     uint256 public yWidth = 50;
+    // increase rate
     uint256 public epsilon = 0.01 ether;
+    // every dot claim starts with this price
     uint256 public claimBasePrice = 0.1 ether;
-
-    State public gameState;
+    // current game
+    uint256 public activeGameIndex = 0;
 
     // gameID => Y index => X index => Dot
     mapping(uint256 => mapping(uint256 => mapping(uint256 => Dot))) public dots;
     // gameID => country => numberOfDotsOccupiedByCountry
     mapping(uint256 => mapping(uint256 => uint256)) public numberOfDotsOccupiedByCountry;
 
-    uint256 public treasury;
-    // we can add mapping integer to string(country name) to put countries in the blockchain
+    // split every games accounting
+    mapping(uint256 => Game) public games;
+    // how many country do we have
     uint256 public numberOfCountries = 20;
-
-    constructor() {
-        gameState = State.Available;
-    }
 
     function claimLocation(
         uint256 gameIndex,
@@ -32,19 +33,27 @@ contract Dots is IDots, Ownable {
         uint256 country
     ) public payable {
         Dot memory dotMemory = dots[gameIndex][y][x];
+        Game storage game = games[gameIndex];
 
-        if (gameState != State.Available) revert GameIsNotActive();
+        // only play active game
+        if (gameIndex != activeGameIndex) revert InvalidGame();
+        // check state of current game
+        if (game.state != State.Started) revert GameIsNotActive();
+        //check for first claim
         if (msg.value < claimBasePrice) revert InsufficientBasePrice();
+        // check for reclaims
         if (msg.value < dotMemory.lastPrice + epsilon) revert InsufficientPrice();
+        // validate coordinates
         if (x > xWidth - 1 || y > yWidth - 1) revert UndefinedCoordinates();
+        // validate country
         if (country == 0 || country > numberOfCountries) revert UndefinedCountry();
 
         address lastOwner = dotMemory.owner;
-
+        //decrement number of dot for current country
         if (numberOfDotsOccupiedByCountry[gameIndex][dotMemory.country] > 0) {
             numberOfDotsOccupiedByCountry[gameIndex][dotMemory.country] -= 1;
         }
-
+        // increment number of dot for current country
         numberOfDotsOccupiedByCountry[gameIndex][country] += 1;
 
         Dot storage dot = dots[gameIndex][y][x];
@@ -57,32 +66,30 @@ contract Dots is IDots, Ownable {
 
         //game over if one country claimed every point
         if (numberOfDotsOccupiedByCountry[gameIndex][country] == (xWidth * yWidth)) {
-            gameState = State.Completed;
-            emit GameEnded(country);
+            activeGameIndex++;
+            game.state = State.Completed;
+            emit GameEnded(gameIndex, country);
         }
 
-        treasury += dotMemory.lastPrice / 1000;
+        // if it is first claim, claimBasePrice goes to treasury
 
-        // if it is first claim then there is no returning money
-        if (lastOwner != address(0)) {
+        if (lastOwner == address(0)) {
+            game.treasury += msg.value;
+        } else {
+            // if it is reclaim, send claimers money to older claimer
+            // ex: claimed for 1000 eth, then reclaimer claimed for a 2000 eth
+            // then send 2000 eth (- %0.1 fee) to older claimer
+            game.treasury += msg.value / 1000;
             //solhint-disable-next-line
-            (bool success, ) = payable(lastOwner).call{ value: (dotMemory.lastPrice * 999) / 1000 }("");
+            (bool success, ) = payable(lastOwner).call{ value: (msg.value * 999) / 1000 }("");
             if (!success) revert TxError();
         }
     }
 
-    function setState(State newState) public onlyOwner {
-        gameState = newState;
+    //change the game state of game @param gameIndex
+    function changeGameState(uint256 gameIndex, State newState) public onlyOwner {
+        games[gameIndex].state = newState;
         emit StateChanged(newState);
-    }
-
-    function claimTreasury() public onlyOwner {
-        uint256 lastTreasury = treasury;
-        treasury = 0;
-
-        //solhint-disable-next-line
-        (bool success, ) = payable(owner()).call{ value: lastTreasury }("");
-        if (!success) revert TxError();
     }
 
     function setNumberOfCountries(uint256 _numberOfCountries) external onlyOwner {

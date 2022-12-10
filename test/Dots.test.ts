@@ -25,6 +25,7 @@ describe(name, () => {
 
   // claim tests
   it('should claim successfully', async () => {
+    await contract.changeGameState(0, 1);
     const price = BASE_PRICE.add(EPSILON);
     await contract.connect(addresses[0]).claimLocation(0, 0, 0, 1, {
       value: String(BASE_PRICE),
@@ -39,6 +40,7 @@ describe(name, () => {
   });
 
   it('should RE-claim successfully', async () => {
+    await contract.changeGameState(0, 1);
     const price = BASE_PRICE.add(EPSILON);
     await contract.connect(addresses[0]).claimLocation(0, 0, 0, 1, {
       value: String(BASE_PRICE),
@@ -53,6 +55,7 @@ describe(name, () => {
   });
 
   it('should revert with InsufficientBasePrice', async () => {
+    await contract.changeGameState(0, 1);
     await expect(
       contract.claimLocation(0, 0, 0, 1)
     ).to.be.revertedWithCustomError(contract, 'InsufficientBasePrice');
@@ -69,6 +72,8 @@ describe(name, () => {
   // });
 
   it('should UndefinedCoordinates', async () => {
+    await contract.changeGameState(0, 1);
+
     await expect(
       contract.claimLocation(0, 0, 51, 1, {
         value: String(BASE_PRICE),
@@ -76,6 +81,8 @@ describe(name, () => {
     ).to.be.revertedWithCustomError(contract, 'UndefinedCoordinates');
   });
   it('should UndefinedCountry', async () => {
+    await contract.changeGameState(0, 1);
+
     await expect(
       contract.claimLocation(0, 0, 0, 0, {
         value: String(BASE_PRICE),

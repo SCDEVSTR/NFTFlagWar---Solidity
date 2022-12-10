@@ -2,9 +2,11 @@
 pragma solidity ^0.8.7;
 
 interface IDots {
-    //TODO: add cancelled state ?
     enum State {
-        Available,
+        // not started yet
+        Loading,
+        //started
+        Started,
         Paused,
         Completed
     }
@@ -13,6 +15,13 @@ interface IDots {
         address owner;
         uint256 country;
         uint256 lastPrice;
+    }
+
+    struct Game {
+        // treasury will be distributed to winners
+        uint256 treasury;
+        // the state of game
+        State state;
     }
 
     event Transfer(
@@ -25,10 +34,11 @@ interface IDots {
         uint256 oldCountry
     );
 
-    event GameEnded(uint256 winnerCountry);
+    event GameEnded(uint256 indexed gameIndex, uint256 indexed winnerCountry);
     event StateChanged(State indexed newState);
     event BoardCleared();
 
+    error InvalidGame();
     error GameIsNotActive();
     error GameIsActive();
     error InsufficientBasePrice();
