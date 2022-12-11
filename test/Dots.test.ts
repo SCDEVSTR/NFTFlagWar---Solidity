@@ -102,7 +102,7 @@ describe(name, () => {
   it('Should vest correctly', async () => {
     await contract.changeGameState(0, 1);
     let overallGasPrice = BigNumber.from('0');
-    const initialBalanceofOwner = await ethers.provider.getBalance(
+    const initialBalanceOfOwner = await ethers.provider.getBalance(
       owner.address
     );
 
@@ -137,15 +137,15 @@ describe(name, () => {
     overallGasPrice = overallGasPrice.add(
       tc4.gasUsed.mul(tc4.effectiveGasPrice)
     );
-    const FinalBalanceofOwner = await ethers.provider.getBalance(owner.address);
+    const FinalBalanceOfOwner = await ethers.provider.getBalance(owner.address);
     const a = await contract.getGame(0);
 
     const vestAmount = a['treasury'].mul(stake).div(BigNumber.from('2500'));
-    const expectedBalance = initialBalanceofOwner
+    const expectedBalance = initialBalanceOfOwner
       .sub(overallGasPrice)
       .add(vestAmount)
       .sub(BASE_PRICE.mul(BigNumber.from('2')));
-    expect(FinalBalanceofOwner).to.be.equal(expectedBalance);
+    expect(FinalBalanceOfOwner).to.be.equal(expectedBalance);
   });
 
   it('should track vest stakes properly', async () => {
