@@ -37,6 +37,7 @@ interface IDots {
     event GameEnded(uint256 indexed gameIndex, uint256 indexed winnerCountry);
     event StateChanged(State indexed newState);
     event BoardCleared();
+    event VestingSent(address indexed to, uint256 indexed vestingStake, uint256 amount);
 
     error InvalidGame();
     error GameIsNotActive();
@@ -46,6 +47,11 @@ interface IDots {
     error UndefinedCoordinates();
     error UndefinedCountry();
     error TxError();
+    error NoVesting();
 
     function xWidth() external view returns (uint256);
+
+    function yWidth() external view returns (uint256);
+
+    function getGame(uint256 gameIndex) external view returns (Game memory);
 }
