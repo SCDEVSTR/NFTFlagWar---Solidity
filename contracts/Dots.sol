@@ -4,89 +4,111 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IDots.sol";
 
-//TODO: FinishGame
 contract Dots is IDots, Ownable {
-    //TODO: Reusability
-    uint256 public constant X_WIDTH = 50;
-    uint256 public constant Y_WIDTH = 50;
-    uint256 public constant EPSILON = 0.01 ether;
-    uint256 public constant CLAIM_BASE_PRICE = 0.1 ether;
+    // grid size
+    uint256 public xWidth = 50;
+    // grid size
+    uint256 public yWidth = 50;
+    // increase rate
+    uint256 public epsilon = 0.01 ether;
+    // every dot claim starts with this price
+    uint256 public claimBasePrice = 0.1 ether;
+    // current game
+    uint256 public activeGameIndex = 0;
 
-    State public gameState;
+    // gameID => Y index => X index => Dot
+    mapping(uint256 => mapping(uint256 => mapping(uint256 => Dot))) public dots;
+    // gameID => country => numberOfDotsOccupiedByCountry
+    mapping(uint256 => mapping(uint256 => uint256)) public numberOfDotsOccupiedByCountry;
 
-    mapping(uint256 => mapping(uint256 => Dot)) public dots;
-    mapping(Country => uint256) public numberOfDotsOccupiedByCountry;
-    uint256 public treasury;
-
-    constructor() {
-        gameState = State.Available;
-    }
+    // split every games accounting
+    mapping(uint256 => Game) public games;
+    // how many country do we have
+    uint256 public numberOfCountries = 20;
 
     function claimLocation(
-        uint256 x,
+        uint256 gameIndex,
         uint256 y,
-        Country country
+        uint256 x,
+        uint256 country
     ) public payable {
-        Dot memory dotMemory = dots[x][y];
+        Dot memory dotMemory = dots[gameIndex][y][x];
+        Game storage game = games[gameIndex];
 
-        if (gameState != State.Available) revert GameIsNotActive();
-        if (msg.value < CLAIM_BASE_PRICE) revert InsufficientBasePrice();
-        if (msg.value < dotMemory.lastPrice + EPSILON) revert InsufficientPrice();
-        if (x > X_WIDTH - 1 || y > Y_WIDTH - 1) revert UndefinedCoordinates();
-        if (country == Country.Nulland || country > Country.UnitedStates) revert UndefinedCountry();
+        // only play active game
+        if (gameIndex != activeGameIndex) revert InvalidGame();
+        // check state of current game
+        if (game.state != State.Started) revert GameIsNotActive();
+        //check for first claim
+        if (msg.value < claimBasePrice) revert InsufficientBasePrice();
+        // check for reclaims
+        if (msg.value < dotMemory.lastPrice + epsilon) revert InsufficientPrice();
+        // validate coordinates
+        if (x > xWidth - 1 || y > yWidth - 1) revert UndefinedCoordinates();
+        // validate country
+        if (country == 0 || country > numberOfCountries) revert UndefinedCountry();
 
         address lastOwner = dotMemory.owner;
-
-        if (numberOfDotsOccupiedByCountry[dotMemory.country] > 0) {
-            numberOfDotsOccupiedByCountry[dotMemory.country] -= 1;
+        //decrement number of dot for current country
+        if (numberOfDotsOccupiedByCountry[gameIndex][dotMemory.country] > 0) {
+            numberOfDotsOccupiedByCountry[gameIndex][dotMemory.country] -= 1;
         }
+        // increment number of dot for current country
+        numberOfDotsOccupiedByCountry[gameIndex][country] += 1;
 
-        numberOfDotsOccupiedByCountry[country] += 1;
-
-        Dot storage dot = dots[x][y];
+        Dot storage dot = dots[gameIndex][y][x];
 
         dot.lastPrice = msg.value;
         dot.owner = msg.sender;
         dot.country = country;
 
-        emit Transfer(x, y, msg.value, dotMemory.lastPrice, country, dotMemory.country);
+        emit Transfer(gameIndex, y, x, msg.value, dotMemory.lastPrice, country, dotMemory.country);
 
         //game over if one country claimed every point
-        if (numberOfDotsOccupiedByCountry[country] == (X_WIDTH * Y_WIDTH)) {
-            //TODO: finish game
-            gameState = State.Completed;
-            emit GameEnded(country);
+        if (numberOfDotsOccupiedByCountry[gameIndex][country] == (xWidth * yWidth)) {
+            activeGameIndex++;
+            game.state = State.Completed;
+            emit GameEnded(gameIndex, country);
         }
 
-        treasury += dotMemory.lastPrice / 1000;
+        // if it is first claim, claimBasePrice goes to treasury
 
-        // if it is first claim then there is no returning money
-        if (lastOwner != address(0)) {
+        if (lastOwner == address(0)) {
+            game.treasury += msg.value;
+        } else {
+            // if it is reclaim, send claimers money to older claimer
+            // ex: claimed for 1000 eth, then reclaimer claimed for a 2000 eth
+            // then send 2000 eth (- %0.1 fee) to older claimer
+            game.treasury += msg.value / 1000;
             //solhint-disable-next-line
-            (bool success, ) = payable(lastOwner).call{ value: (dotMemory.lastPrice * 999) / 1000 }("");
+            (bool success, ) = payable(lastOwner).call{ value: (msg.value * 999) / 1000 }("");
             if (!success) revert TxError();
         }
     }
 
-    function setState(State newState) public onlyOwner {
-        gameState = newState;
+    //change the game state of game @param gameIndex
+    function changeGameState(uint256 gameIndex, State newState) public onlyOwner {
+        games[gameIndex].state = newState;
         emit StateChanged(newState);
     }
 
-    function claimTreasury() public onlyOwner {
-        uint256 lastTreasury = treasury;
-        treasury = 0;
-
-        //solhint-disable-next-line
-        (bool success, ) = payable(owner()).call{ value: lastTreasury }("");
-        if (!success) revert TxError();
+    function setNumberOfCountries(uint256 _numberOfCountries) external onlyOwner {
+        numberOfCountries = _numberOfCountries;
     }
 
-    function getGameBoard() public view returns (Dot[Y_WIDTH][X_WIDTH] memory board) {
-        for (uint256 j = 0; j < X_WIDTH; j++) {
-            for (uint256 i = 0; i < Y_WIDTH; i++) {
-                board[j][i] = dots[j][i];
-            }
-        }
+    function setXWidth(uint256 _xWidth) external onlyOwner {
+        xWidth = _xWidth;
+    }
+
+    function setYWidth(uint256 _yWidth) external onlyOwner {
+        yWidth = _yWidth;
+    }
+
+    function setEpsilon(uint256 _epsilon) external onlyOwner {
+        epsilon = _epsilon;
+    }
+
+    function setBasePrice(uint256 _claimBasePrice) external onlyOwner {
+        claimBasePrice = _claimBasePrice;
     }
 }
