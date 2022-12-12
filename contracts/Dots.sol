@@ -9,7 +9,7 @@ contract Dots is IDots, Ownable, VestingContract {
     // grid size
     uint256 public override xWidth = 50;
     // grid size
-    uint256 public yWidth = 50;
+    uint256 public override yWidth = 50;
     // increase rate
     uint256 public epsilon = 0.01 ether;
     // every dot claim starts with this price
@@ -76,11 +76,14 @@ contract Dots is IDots, Ownable, VestingContract {
 
         if (lastOwner == address(0)) {
             game.treasury += msg.value;
+            vestingStakes[activeGameIndex][msg.sender] += 1;
         } else {
             // if it is reclaim, send claimers money to older claimer
             // ex: claimed for 1000 eth, then reclaimer claimed for a 2000 eth
             // then send 2000 eth (- %0.1 fee) to older claimer
             game.treasury += msg.value / 1000;
+            vestingStakes[activeGameIndex][msg.sender] += 1;
+            vestingStakes[activeGameIndex][lastOwner] -= 1;
             //solhint-disable-next-line
             (bool success, ) = payable(lastOwner).call{ value: (msg.value * 999) / 1000 }("");
             if (!success) revert TxError();
@@ -111,5 +114,9 @@ contract Dots is IDots, Ownable, VestingContract {
 
     function setBasePrice(uint256 _claimBasePrice) external onlyOwner {
         claimBasePrice = _claimBasePrice;
+    }
+
+    function getGame(uint256 gameIndex) external view override returns (Game memory) {
+        return games[gameIndex];
     }
 }
