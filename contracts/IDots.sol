@@ -7,7 +7,6 @@ interface IDots {
         Loading,
         Started,
         Paused,
-        Resumed,
         Completed
     }
 
@@ -57,6 +56,7 @@ interface IDots {
     event NewCountriesAdded(uint256 indexed newNumberOfCountries);
 
     error InvalidGame();
+    error GameIsActive();
     error GameIsAlreadyStarted();
     error GameIsNotStarted();
     error GameIsNotPaused();
