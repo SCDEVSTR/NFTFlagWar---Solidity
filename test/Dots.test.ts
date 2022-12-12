@@ -17,7 +17,6 @@ describe(name, () => {
   before(async () => {
     [owner, ...addresses] = await ethers.getSigners();
     factory = await ethers.getContractFactory(name);
-    console.log(addresses[0].address);
   });
 
   beforeEach(async () => {
@@ -26,7 +25,12 @@ describe(name, () => {
 
   // claim tests
   it('should claim successfully', async () => {
-    await contract.changeGameState(0, 1);
+    await contract.startGame(
+      50,
+      50,
+      ethers.utils.parseEther('0.1'),
+      ethers.utils.parseEther('0.01')
+    );
     const price = BASE_PRICE.add(EPSILON);
     await contract.connect(addresses[0]).claimLocation(0, 0, 0, 1, {
       value: String(BASE_PRICE),
@@ -41,7 +45,12 @@ describe(name, () => {
   });
 
   it('should RE-claim successfully', async () => {
-    await contract.changeGameState(0, 1);
+    await contract.startGame(
+      50,
+      50,
+      ethers.utils.parseEther('0.1'),
+      ethers.utils.parseEther('0.01')
+    );
     const price = BASE_PRICE.add(EPSILON);
     await contract.connect(addresses[0]).claimLocation(0, 0, 0, 1, {
       value: String(BASE_PRICE),
@@ -56,7 +65,12 @@ describe(name, () => {
   });
 
   it('should revert with InsufficientBasePrice', async () => {
-    await contract.changeGameState(0, 1);
+    await contract.startGame(
+      50,
+      50,
+      ethers.utils.parseEther('0.1'),
+      ethers.utils.parseEther('0.01')
+    );
     await expect(
       contract.claimLocation(0, 0, 0, 1)
     ).to.be.revertedWithCustomError(contract, 'InsufficientBasePrice');
@@ -73,7 +87,12 @@ describe(name, () => {
   // });
 
   it('should UndefinedCoordinates', async () => {
-    await contract.changeGameState(0, 1);
+    await contract.startGame(
+      50,
+      50,
+      ethers.utils.parseEther('0.1'),
+      ethers.utils.parseEther('0.01')
+    );
 
     await expect(
       contract.claimLocation(0, 0, 51, 1, {
@@ -82,7 +101,12 @@ describe(name, () => {
     ).to.be.revertedWithCustomError(contract, 'UndefinedCoordinates');
   });
   it('should UndefinedCountry', async () => {
-    await contract.changeGameState(0, 1);
+    await contract.startGame(
+      50,
+      50,
+      ethers.utils.parseEther('0.1'),
+      ethers.utils.parseEther('0.01')
+    );
 
     await expect(
       contract.claimLocation(0, 0, 0, 0, {
@@ -91,7 +115,12 @@ describe(name, () => {
     ).to.be.revertedWithCustomError(contract, 'UndefinedCountry');
   });
   it('should not vest while game is continuing', async () => {
-    await contract.changeGameState(0, 1);
+    await contract.startGame(
+      50,
+      50,
+      ethers.utils.parseEther('0.1'),
+      ethers.utils.parseEther('0.01')
+    );
     await contract.claimLocation(0, 0, 0, 1, { value: String(BASE_PRICE) });
     await contract.claimLocation(0, 0, 1, 1, { value: String(BASE_PRICE) });
     await expect(contract.withdrawVesting(0)).to.be.revertedWithCustomError(
@@ -100,7 +129,12 @@ describe(name, () => {
     );
   });
   it('Should vest correctly', async () => {
-    await contract.changeGameState(0, 1);
+    await contract.startGame(
+      50,
+      50,
+      ethers.utils.parseEther('0.1'),
+      ethers.utils.parseEther('0.01')
+    );
     let overallGasPrice = BigNumber.from('0');
     const initialBalanceOfOwner = await ethers.provider.getBalance(
       owner.address
@@ -149,7 +183,12 @@ describe(name, () => {
   });
 
   it('should track vest stakes properly', async () => {
-    await contract.changeGameState(0, 1);
+    await contract.startGame(
+      50,
+      50,
+      ethers.utils.parseEther('0.1'),
+      ethers.utils.parseEther('0.01')
+    );
     let contractAsSigner0 = contract.connect(addresses[0]);
     await contract.claimLocation(0, 0, 0, 1, { value: String(BASE_PRICE) });
     await contract.claimLocation(0, 0, 1, 1, { value: String(BASE_PRICE) });
