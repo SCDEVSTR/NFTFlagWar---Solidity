@@ -87,8 +87,8 @@ contract Dots is IDots, Ownable, VestingContract {
     function startGame(
         uint256 xWidth,
         uint256 yWidth,
-        uint256 epsilon,
-        uint256 claimBasePrice
+        uint256 claimBasePrice,
+        uint256 epsilon
     ) external onlyOwner {
         Game memory newGame = Game({
             xWidth: xWidth,
