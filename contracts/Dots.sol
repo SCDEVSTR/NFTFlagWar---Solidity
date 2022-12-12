@@ -6,17 +6,8 @@ import "./IDots.sol";
 import "./VestingContract.sol";
 
 contract Dots is IDots, Ownable, VestingContract {
-    // grid size
-    uint256 public override xWidth = 50;
-    // grid size
-    uint256 public override yWidth = 50;
-    // increase rate
-    uint256 public epsilon = 0.01 ether;
-    // every dot claim starts with this price
-    uint256 public claimBasePrice = 0.1 ether;
     // current game
     uint256 public activeGameIndex = 0;
-
     // gameID => Y index => X index => Dot
     mapping(uint256 => mapping(uint256 => mapping(uint256 => Dot))) public dots;
     // gameID => country => numberOfDotsOccupiedByCountry
@@ -24,7 +15,8 @@ contract Dots is IDots, Ownable, VestingContract {
 
     // split every games accounting
     mapping(uint256 => Game) public games;
-    // how many country do we have
+    // how many country do we have,
+    // Countries starts from 1, 0 is Nulland
     uint256 public numberOfCountries = 20;
 
     function claimLocation(
@@ -34,18 +26,18 @@ contract Dots is IDots, Ownable, VestingContract {
         uint256 country
     ) public payable {
         Dot memory dotMemory = dots[gameIndex][y][x];
-        Game storage game = games[gameIndex];
+        Game memory gameMemory = games[gameIndex];
 
         // only play active game
         if (gameIndex != activeGameIndex) revert InvalidGame();
         // check state of current game
-        if (game.state != State.Started) revert GameIsNotActive();
+        if (gameMemory.state != State.Started) revert GameIsNotActive();
         //check for first claim
-        if (msg.value < claimBasePrice) revert InsufficientBasePrice();
+        if (msg.value < gameMemory.claimBasePrice) revert InsufficientBasePrice();
         // check for reclaims
-        if (msg.value < dotMemory.lastPrice + epsilon) revert InsufficientPrice();
+        if (msg.value < dotMemory.lastPrice + gameMemory.epsilon) revert InsufficientPrice();
         // validate coordinates
-        if (x > xWidth - 1 || y > yWidth - 1) revert UndefinedCoordinates();
+        if (x > gameMemory.xWidth - 1 || y > gameMemory.yWidth - 1) revert UndefinedCoordinates();
         // validate country
         if (country == 0 || country > numberOfCountries) revert UndefinedCountry();
 
@@ -58,6 +50,7 @@ contract Dots is IDots, Ownable, VestingContract {
         numberOfDotsOccupiedByCountry[gameIndex][country] += 1;
 
         Dot storage dot = dots[gameIndex][y][x];
+        Game storage game = games[gameIndex];
 
         dot.lastPrice = msg.value;
         dot.owner = msg.sender;
@@ -66,7 +59,7 @@ contract Dots is IDots, Ownable, VestingContract {
         emit Transfer(gameIndex, y, x, msg.value, dotMemory.lastPrice, country, dotMemory.country);
 
         //game over if one country claimed every point
-        if (numberOfDotsOccupiedByCountry[gameIndex][country] == (xWidth * yWidth)) {
+        if (numberOfDotsOccupiedByCountry[gameIndex][country] == (gameMemory.xWidth * gameMemory.yWidth)) {
             activeGameIndex++;
             game.state = State.Completed;
             emit GameEnded(gameIndex, country);
@@ -90,30 +83,40 @@ contract Dots is IDots, Ownable, VestingContract {
         }
     }
 
-    //change the game state of game @param gameIndex
-    function changeGameState(uint256 gameIndex, State newState) public onlyOwner {
-        games[gameIndex].state = newState;
-        emit StateChanged(newState);
+    // start the active game
+    function startGame(
+        uint256 xWidth,
+        uint256 yWidth,
+        uint256 epsilon,
+        uint256 claimBasePrice
+    ) external onlyOwner {
+        Game memory newGame = Game({
+            xWidth: xWidth,
+            yWidth: yWidth,
+            epsilon: epsilon,
+            claimBasePrice: claimBasePrice,
+            treasury: 0,
+            state: State.Started
+        });
+        games[activeGameIndex] = newGame;
+        emit GameStarted(activeGameIndex, xWidth, yWidth, epsilon, claimBasePrice);
+    }
+
+    // pause the active game
+    function pauseGame() external onlyOwner {
+        games[activeGameIndex].state = State.Paused;
+        emit GamePaused(activeGameIndex);
+    }
+
+    // resume the active game
+    function resumeGame() external onlyOwner {
+        games[activeGameIndex].state = State.Resumed;
+        emit GameResumed(activeGameIndex);
     }
 
     function setNumberOfCountries(uint256 _numberOfCountries) external onlyOwner {
         numberOfCountries = _numberOfCountries;
-    }
-
-    function setXWidth(uint256 _xWidth) external onlyOwner {
-        xWidth = _xWidth;
-    }
-
-    function setYWidth(uint256 _yWidth) external onlyOwner {
-        yWidth = _yWidth;
-    }
-
-    function setEpsilon(uint256 _epsilon) external onlyOwner {
-        epsilon = _epsilon;
-    }
-
-    function setBasePrice(uint256 _claimBasePrice) external onlyOwner {
-        claimBasePrice = _claimBasePrice;
+        emit NewCountriesAdded(_numberOfCountries);
     }
 
     function getGame(uint256 gameIndex) external view override returns (Game memory) {

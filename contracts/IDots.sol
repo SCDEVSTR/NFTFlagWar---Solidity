@@ -8,6 +8,7 @@ interface IDots {
         //started
         Started,
         Paused,
+        Resumed,
         Completed
     }
 
@@ -22,6 +23,14 @@ interface IDots {
         uint256 treasury;
         // the state of game
         State state;
+        // grid size
+        uint256 xWidth;
+        // grid size
+        uint256 yWidth;
+        // increase rate
+        uint256 epsilon;
+        // every dot claim starts with this price
+        uint256 claimBasePrice;
     }
 
     event Transfer(
@@ -35,9 +44,18 @@ interface IDots {
     );
 
     event GameEnded(uint256 indexed gameIndex, uint256 indexed winnerCountry);
-    event StateChanged(State indexed newState);
-    event BoardCleared();
     event VestingSent(address indexed to, uint256 indexed vestingStake, uint256 amount);
+
+    event GameStarted(
+        uint256 indexed gameIndex,
+        uint256 xWidth,
+        uint256 yWidth,
+        uint256 epsilon,
+        uint256 claimBasePrice
+    );
+    event GamePaused(uint256 indexed gameIndex);
+    event GameResumed(uint256 indexed gameIndex);
+    event NewCountriesAdded(uint256 indexed newNumberOfCountries);
 
     error InvalidGame();
     error GameIsNotActive();
@@ -48,10 +66,6 @@ interface IDots {
     error UndefinedCountry();
     error TxError();
     error NoVesting();
-
-    function xWidth() external view returns (uint256);
-
-    function yWidth() external view returns (uint256);
 
     function getGame(uint256 gameIndex) external view returns (Game memory);
 }

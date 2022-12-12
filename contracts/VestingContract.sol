@@ -18,7 +18,7 @@ abstract contract VestingContract is IDots {
         if (vestingStake <= 0) revert NoVesting();
         uint256 totalVestingAmount = game.treasury;
         vestingStakes[gameIndex][msg.sender] = 0;
-        uint256 totalValue = (vestingStake * totalVestingAmount) / (dotContract.yWidth() * dotContract.xWidth());
+        uint256 totalValue = (vestingStake * totalVestingAmount) / (game.yWidth * game.xWidth);
         //solhint-disable-next-line
         (bool success, ) = payable(msg.sender).call{ value: totalValue }("");
         if (!success) revert TxError();
