@@ -158,7 +158,7 @@ describe(name, () => {
       tc2.gasUsed.mul(tc2.effectiveGasPrice)
     );
     // Transaction 3
-    const tx3 = await contract.changeGameState(0, 3);
+    const tx3 = await contract.finishGame();
     const tc3 = await tx3.wait(1);
     overallGasPrice = overallGasPrice.add(
       tc3.gasUsed.mul(tc3.effectiveGasPrice)
@@ -201,7 +201,13 @@ describe(name, () => {
     expect(signer0Stake).to.be.equal(BigNumber.from('1'));
   });
   it('should revert if there is no stake', async () => {
-    await contract.changeGameState(0, 3);
+    await contract.startGame(
+      50,
+      50,
+      ethers.utils.parseEther('0.1'),
+      ethers.utils.parseEther('0.01')
+    );
+    await contract.finishGame();
     await expect(contract.withdrawVesting(0)).to.be.revertedWithCustomError(
       contract,
       'NoVesting'

@@ -127,4 +127,9 @@ contract Dots is IDots, Ownable, VestingContract {
     function getGame(uint256 gameIndex) external view override returns (Game memory) {
         return games[gameIndex];
     }
+
+    //@notice For testing purposes
+    function finishGame() external onlyOwner {
+        games[activeGameIndex].state = State.Completed;
+    }
 }
