@@ -5,7 +5,6 @@ interface IDots {
     enum State {
         // not started yet
         Loading,
-        //started
         Started,
         Paused,
         Resumed,
@@ -58,8 +57,10 @@ interface IDots {
     event NewCountriesAdded(uint256 indexed newNumberOfCountries);
 
     error InvalidGame();
+    error GameIsAlreadyStarted();
+    error GameIsNotStarted();
+    error GameIsNotPaused();
     error GameIsNotActive();
-    error GameIsActive();
     error InsufficientBasePrice();
     error InsufficientPrice();
     error UndefinedCoordinates();

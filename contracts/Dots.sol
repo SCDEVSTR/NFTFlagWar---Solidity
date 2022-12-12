@@ -90,6 +90,7 @@ contract Dots is IDots, Ownable, VestingContract {
         uint256 claimBasePrice,
         uint256 epsilon
     ) external onlyOwner {
+        if (games[activeGameIndex].state != State.Loading) revert GameIsAlreadyStarted();
         Game memory newGame = Game({
             xWidth: xWidth,
             yWidth: yWidth,
@@ -104,12 +105,16 @@ contract Dots is IDots, Ownable, VestingContract {
 
     // pause the active game
     function pauseGame() external onlyOwner {
+        if (games[activeGameIndex].state != State.Started) revert GameIsNotStarted();
+
         games[activeGameIndex].state = State.Paused;
         emit GamePaused(activeGameIndex);
     }
 
     // resume the active game
     function resumeGame() external onlyOwner {
+        if (games[activeGameIndex].state != State.Paused) revert GameIsNotPaused();
+
         games[activeGameIndex].state = State.Resumed;
         emit GameResumed(activeGameIndex);
     }
