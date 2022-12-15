@@ -6,6 +6,8 @@ import "./LibraryContract.sol";
 abstract contract VestingContract is IDots {
     
     IDots public dotContract;
+    
+    //GameId=> User Adress => User Share
     mapping(uint256 => mapping(address => uint256)) public vestingStakes;
 
     constructor() {
