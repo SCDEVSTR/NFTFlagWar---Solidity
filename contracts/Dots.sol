@@ -31,7 +31,8 @@ contract Dots is IDots, Ownable, VestingContract {
         uint256 country
     ) public payable {
         uint256 gameIndex = activeGameIndex;
-        Dot memory dotMemory = dots[getDotIndex(activeGameIndex, y, x)];
+        bytes32 dotIndex = getDotIndex(activeGameIndex, y, x);
+        Dot memory dotMemory = dots[dotIndex];
         Game memory gameMemory = games[gameIndex];
 
         // check state of current game
@@ -53,7 +54,7 @@ contract Dots is IDots, Ownable, VestingContract {
         // increment number of dot for current country
         numberOfDotsOccupiedByCountry[gameIndex][country] += 1;
 
-        Dot storage dot = dots[getDotIndex(activeGameIndex, y, x)];
+        Dot storage dot = dots[dotIndex];
         Game storage game = games[gameIndex];
 
         dot.lastPrice = msg.value;
