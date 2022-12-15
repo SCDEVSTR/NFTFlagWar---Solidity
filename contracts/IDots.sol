@@ -1,37 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
+import "./LibraryContract.sol";
 
 interface IDots {
-    //TODO: library move to
-    // eternal storage, diamond pattern
-    enum State {
-        // not started yet
-        Loading,
-        Started,
-        Paused,
-        Completed
-    }
-
-    struct Dot {
-        address owner;
-        uint256 country;
-        uint256 lastPrice;
-    }
-
-    struct Game {
-        // treasury will be distributed to winners
-        uint256 treasury;
-        // the state of game
-        State state;
-        // grid size
-        uint256 xWidth;
-        // grid size
-        uint256 yWidth;
-        // increase rate
-        uint256 epsilon;
-        // every dot claim starts with this price
-        uint256 claimBasePrice;
-    }
+    
 
     event Transfer(
         uint256 indexed gameIndex,
@@ -58,11 +30,11 @@ interface IDots {
     event NewCountriesAdded(uint256 indexed newNumberOfCountries);
 
     error InvalidGame();
-    error GameIsActive();
     error GameIsAlreadyStarted();
     error GameIsNotStarted();
     error GameIsNotPaused();
     error GameIsNotActive();
+    error GameIsActive();
     error InsufficientBasePrice();
     error InsufficientPrice();
     error UndefinedCoordinates();
@@ -70,5 +42,5 @@ interface IDots {
     error TxError();
     error NoVesting();
 
-    function getGame(uint256 gameIndex) external view returns (Game memory);
+   function getGame(uint256 gameIndex) external view returns (LibraryContract.Game memory);
 }
