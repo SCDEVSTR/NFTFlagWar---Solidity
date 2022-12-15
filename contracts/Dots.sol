@@ -12,9 +12,12 @@ contract Dots is IDots, Ownable, VestingContract {
     uint256 public activeGameIndex = 0;
     // gameID => Y index => X index => Dot
     // TODO: HASH WITH 0,4
-    mapping(uint256 => mapping(uint256 => mapping(uint256 => Dot))) public dots;
+    // mapping(uint256 => mapping(uint256 => mapping(uint256 => Dot))) public dots;
     // gameID => country => numberOfDotsOccupiedByCountry
     mapping(uint256 => mapping(uint256 => uint256)) public numberOfDotsOccupiedByCountry;
+
+    // gameID => Y index => X index => Dot
+    mapping(bytes32 => Dot) public dots;
 
     // split every games accounting
     mapping(uint256 => Game) public games;
@@ -28,7 +31,8 @@ contract Dots is IDots, Ownable, VestingContract {
         uint256 country
     ) public payable {
         uint256 gameIndex = activeGameIndex;
-        Dot memory dotMemory = dots[gameIndex][y][x];
+        bytes32 dotIndex = getDotIndex(activeGameIndex, y, x);
+        Dot memory dotMemory = dots[dotIndex];
         Game memory gameMemory = games[gameIndex];
 
         // check state of current game
@@ -50,7 +54,7 @@ contract Dots is IDots, Ownable, VestingContract {
         // increment number of dot for current country
         numberOfDotsOccupiedByCountry[gameIndex][country] += 1;
 
-        Dot storage dot = dots[gameIndex][y][x];
+        Dot storage dot = dots[dotIndex];
         Game storage game = games[gameIndex];
 
         dot.lastPrice = msg.value;
@@ -126,5 +130,13 @@ contract Dots is IDots, Ownable, VestingContract {
 
     function getGame(uint256 gameIndex) external view override returns (Game memory) {
         return games[gameIndex];
+    }
+
+    function getDotIndex(
+        uint256 gameIndex,
+        uint256 y,
+        uint256 x
+    ) private pure returns (bytes32) {
+        return keccak256(abi.encodePacked(gameIndex, y, x));
     }
 }
