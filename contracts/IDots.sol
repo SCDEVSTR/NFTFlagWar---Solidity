@@ -2,12 +2,13 @@
 pragma solidity ^0.8.7;
 
 interface IDots {
+    //TODO: library move to
+    // eternal storage, diamond pattern
     enum State {
         // not started yet
         Loading,
         Started,
         Paused,
-        Resumed,
         Completed
     }
 
@@ -57,6 +58,7 @@ interface IDots {
     event NewCountriesAdded(uint256 indexed newNumberOfCountries);
 
     error InvalidGame();
+    error GameIsActive();
     error GameIsAlreadyStarted();
     error GameIsNotStarted();
     error GameIsNotPaused();

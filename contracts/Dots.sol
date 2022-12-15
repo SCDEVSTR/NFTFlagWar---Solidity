@@ -5,10 +5,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IDots.sol";
 import "./VestingContract.sol";
 
+//TODO: DISCUSS MULTISIG
+//TODO: ADD CONTEXT MSG.SENDER
 contract Dots is IDots, Ownable, VestingContract {
     // current game
     uint256 public activeGameIndex = 0;
     // gameID => Y index => X index => Dot
+    // TODO: HASH WITH 0,4
     mapping(uint256 => mapping(uint256 => mapping(uint256 => Dot))) public dots;
     // gameID => country => numberOfDotsOccupiedByCountry
     mapping(uint256 => mapping(uint256 => uint256)) public numberOfDotsOccupiedByCountry;
@@ -20,16 +23,14 @@ contract Dots is IDots, Ownable, VestingContract {
     uint256 public numberOfCountries = 20;
 
     function claimLocation(
-        uint256 gameIndex,
         uint256 y,
         uint256 x,
         uint256 country
     ) public payable {
+        uint256 gameIndex = activeGameIndex;
         Dot memory dotMemory = dots[gameIndex][y][x];
         Game memory gameMemory = games[gameIndex];
 
-        // only play active game
-        if (gameIndex != activeGameIndex) revert InvalidGame();
         // check state of current game
         if (gameMemory.state != State.Started) revert GameIsNotActive();
         //check for first claim
@@ -91,7 +92,7 @@ contract Dots is IDots, Ownable, VestingContract {
         uint256 epsilon
     ) external onlyOwner {
         if (games[activeGameIndex].state != State.Loading) revert GameIsAlreadyStarted();
-        Game memory newGame = Game({
+        games[activeGameIndex] = Game({
             xWidth: xWidth,
             yWidth: yWidth,
             epsilon: epsilon,
@@ -99,7 +100,6 @@ contract Dots is IDots, Ownable, VestingContract {
             treasury: 0,
             state: State.Started
         });
-        games[activeGameIndex] = newGame;
         emit GameStarted(activeGameIndex, xWidth, yWidth, epsilon, claimBasePrice);
     }
 
@@ -115,7 +115,7 @@ contract Dots is IDots, Ownable, VestingContract {
     function resumeGame() external onlyOwner {
         if (games[activeGameIndex].state != State.Paused) revert GameIsNotPaused();
 
-        games[activeGameIndex].state = State.Resumed;
+        games[activeGameIndex].state = State.Started;
         emit GameResumed(activeGameIndex);
     }
 
