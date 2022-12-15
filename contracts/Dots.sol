@@ -1,23 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol";
 import "./IDots.sol";
 import "./VestingContract.sol";
+import  "./LibraryContract.sol";
 
-//TODO: DISCUSS MULTISIG
-//TODO: ADD CONTEXT MSG.SENDER
-contract Dots is IDots, Ownable, VestingContract {
+    contract Dots is IDots, Ownable, VestingContract {
+  
     // current game
     uint256 public activeGameIndex = 0;
     // gameID => Y index => X index => Dot
     // TODO: HASH WITH 0,4
-    mapping(uint256 => mapping(uint256 => mapping(uint256 => Dot))) public dots;
+    // mapping(uint256 => mapping(uint256 => mapping(uint256 => Dot))) public dots;
     // gameID => country => numberOfDotsOccupiedByCountry
     mapping(uint256 => mapping(uint256 => uint256)) public numberOfDotsOccupiedByCountry;
 
+    // gameID => Y index => X index => Dot
+    mapping(bytes32 => LibraryContract.Dot) public dots;
+
     // split every games accounting
-    mapping(uint256 => Game) public games;
+    mapping(uint256 => LibraryContract.Game) public games;
     // how many country do we have,
     // Countries starts from 1, 0 is Nulland
     uint256 public numberOfCountries = 20;
@@ -28,11 +31,12 @@ contract Dots is IDots, Ownable, VestingContract {
         uint256 country
     ) public payable {
         uint256 gameIndex = activeGameIndex;
-        Dot memory dotMemory = dots[gameIndex][y][x];
-        Game memory gameMemory = games[gameIndex];
+        bytes32 dotIndex = getDotIndex(activeGameIndex, y, x);
+        LibraryContract.Dot memory dotMemory = dots[dotIndex];
+        LibraryContract.Game memory gameMemory = games[gameIndex];
 
         // check state of current game
-        if (gameMemory.state != State.Started) revert GameIsNotActive();
+        if (gameMemory.state != LibraryContract.State.Started) revert GameIsNotActive();
         //check for first claim
         if (msg.value < gameMemory.claimBasePrice) revert InsufficientBasePrice();
         // check for reclaims
@@ -50,8 +54,8 @@ contract Dots is IDots, Ownable, VestingContract {
         // increment number of dot for current country
         numberOfDotsOccupiedByCountry[gameIndex][country] += 1;
 
-        Dot storage dot = dots[gameIndex][y][x];
-        Game storage game = games[gameIndex];
+        LibraryContract.Dot storage dot = dots[dotIndex];
+        LibraryContract.Game storage game = games[gameIndex];
 
         dot.lastPrice = msg.value;
         dot.owner = msg.sender;
@@ -62,7 +66,7 @@ contract Dots is IDots, Ownable, VestingContract {
         //game over if one country claimed every point
         if (numberOfDotsOccupiedByCountry[gameIndex][country] == (gameMemory.xWidth * gameMemory.yWidth)) {
             activeGameIndex++;
-            game.state = State.Completed;
+            game.state = LibraryContract.State.Completed;
             emit GameEnded(gameIndex, country);
         }
 
@@ -91,31 +95,31 @@ contract Dots is IDots, Ownable, VestingContract {
         uint256 claimBasePrice,
         uint256 epsilon
     ) external onlyOwner {
-        if (games[activeGameIndex].state != State.Loading) revert GameIsAlreadyStarted();
-        games[activeGameIndex] = Game({
+        if (games[activeGameIndex].state != LibraryContract.State.Loading) revert GameIsAlreadyStarted();
+        games[activeGameIndex] = LibraryContract.Game({
             xWidth: xWidth,
             yWidth: yWidth,
             epsilon: epsilon,
             claimBasePrice: claimBasePrice,
             treasury: 0,
-            state: State.Started
+            state: LibraryContract.State.Started
         });
         emit GameStarted(activeGameIndex, xWidth, yWidth, epsilon, claimBasePrice);
     }
 
     // pause the active game
     function pauseGame() external onlyOwner {
-        if (games[activeGameIndex].state != State.Started) revert GameIsNotStarted();
+        if (games[activeGameIndex].state != LibraryContract.State.Started) revert GameIsNotStarted();
 
-        games[activeGameIndex].state = State.Paused;
+        games[activeGameIndex].state = LibraryContract.State.Paused;
         emit GamePaused(activeGameIndex);
     }
 
     // resume the active game
     function resumeGame() external onlyOwner {
-        if (games[activeGameIndex].state != State.Paused) revert GameIsNotPaused();
+        if (games[activeGameIndex].state != LibraryContract.State.Paused) revert GameIsNotPaused();
 
-        games[activeGameIndex].state = State.Started;
+        games[activeGameIndex].state = LibraryContract.State.Started;
         emit GameResumed(activeGameIndex);
     }
 
@@ -124,7 +128,15 @@ contract Dots is IDots, Ownable, VestingContract {
         emit NewCountriesAdded(_numberOfCountries);
     }
 
-    function getGame(uint256 gameIndex) external view override returns (Game memory) {
+    function getGame(uint256 gameIndex) external view override returns (LibraryContract.Game memory) {
         return games[gameIndex];
+    }
+
+    function getDotIndex(
+        uint256 gameIndex,
+        uint256 y,
+        uint256 x
+    ) private pure returns (bytes32) {
+        return keccak256(abi.encodePacked(gameIndex, y, x));
     }
 }
