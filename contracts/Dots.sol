@@ -5,14 +5,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IDots.sol";
 import "./VestingContract.sol";
 
-//TODO: DISCUSS MULTISIG
-//TODO: ADD CONTEXT MSG.SENDER
 contract Dots is IDots, Ownable, VestingContract {
     // current game
-    uint256 public activeGameIndex = 0;
-    // gameID => Y index => X index => Dot
-    // TODO: HASH WITH 0,4
-    // mapping(uint256 => mapping(uint256 => mapping(uint256 => Dot))) public dots;
+    uint256 public activeGameIndex;
     // gameID => country => numberOfDotsOccupiedByCountry
     mapping(uint256 => mapping(uint256 => uint256)) public numberOfDotsOccupiedByCountry;
 

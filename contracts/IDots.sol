@@ -2,8 +2,6 @@
 pragma solidity ^0.8.7;
 
 interface IDots {
-    //TODO: library move to
-    // eternal storage, diamond pattern
     enum State {
         // not started yet
         Loading,
