@@ -58,12 +58,7 @@ contract Dots is IDots, Ownable, VestingContract {
 
         emit Transfer(gameIndex, y, x, msg.value, dotMemory.lastPrice, country, dotMemory.country);
 
-        //game over if one country claimed every point
-        if (numberOfDotsOccupiedByCountry[gameIndex][country] == (gameMemory.xWidth * gameMemory.yWidth)) {
-            activeGameIndex++;
-            game.state = State.Completed;
-            emit GameEnded(gameIndex, country);
-        }
+       
 
         // if it is first claim, claimBasePrice goes to treasury
 
@@ -80,6 +75,12 @@ contract Dots is IDots, Ownable, VestingContract {
             //solhint-disable-next-line
             (bool success, ) = payable(lastOwner).call{ value: (msg.value * 999) / 1000 }("");
             if (!success) revert TxError();
+        }
+         //game over if one country claimed every point
+        if (numberOfDotsOccupiedByCountry[gameIndex][country] == (gameMemory.xWidth * gameMemory.yWidth)) {
+            activeGameIndex++;
+            game.state = State.Completed;
+            emit GameEnded(gameIndex, country);
         }
     }
 
